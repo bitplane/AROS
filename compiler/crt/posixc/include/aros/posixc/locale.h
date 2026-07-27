@@ -2,7 +2,7 @@
 #define _POSIXC_LOCALE_H_
 
 /*
-    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX.1-2008 header file: locale.h
@@ -27,6 +27,11 @@ extern "C" {
 #define LC_TIME_MASK        (1 << LC_TIME)
 #define LC_MESSAGES_MASK    (1 << LC_MESSAGES)
 #define LC_ALL_MASK         (LC_COLLATE_MASK | LC_CTYPE_MASK | LC_MONETARY_MASK | LC_NUMERIC_MASK | LC_TIME_MASK | LC_MESSAGES_MASK)
+
+/* The special locale_t denoting the global locale, per POSIX.1-2008.
+   LC_* names are reserved for locale.h, so this is defined
+   unconditionally. */
+#define LC_GLOBAL_LOCALE    ((locale_t)-1)
 
 /* POSIX.1-2008 extended locale functions */
 #if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L
