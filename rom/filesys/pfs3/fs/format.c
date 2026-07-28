@@ -181,7 +181,9 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, globaldata *g)
 
 	/* update dos envec and geom */
 	GetDriveGeometry (g);
+#if !PFS3_NO_FORMAT_REQUESTERS
 	ShowVersion (g);
+#endif
 
 	/* issue 00118: disk cannot exceed MAX_DISK_SIZE */
 	if (g->geom->dg_TotalSectors > MAXDISKSIZE) {
@@ -356,7 +358,9 @@ static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
 				resblocksize = 4096;
 			}
 			rbl->disktype = ID_PFS2_DISK;
+#if !PFS3_NO_FORMAT_REQUESTERS
 			NormalErrorMsg(AFS_WARNING_EXPERIMENTAL_DISK, NULL, 1);
+#endif
 		}
 	}
 
@@ -371,7 +375,9 @@ static rootblock_t *MakeRootBlock (DSTR diskname, globaldata *g)
 #if LARGE_FILE_SIZE
 	rbl->options |= MODE_LARGEFILE;
 	rbl->disktype = ID_PFS2_DISK;
+#if !PFS3_NO_FORMAT_REQUESTERS
 	NormalErrorMsg(AFS_WARNING_EXPERIMENTAL_FILE, NULL, 1);
+#endif
 #endif
 
 	rbl->datestamp = 1;
