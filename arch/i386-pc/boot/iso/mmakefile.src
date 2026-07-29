@@ -8,7 +8,8 @@ TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
 #MM bootiso-pc-i386 : \
 #MM                              bootiso-native \
 #MM                              kernel-link-pc-i386 \
-#MM                              AROS-pc-drivers
+#MM                              AROS-pc-drivers \
+#MM                              workbench-devs-pfs3-c-pfsdoctor
 
 #MM
 bootiso-pc-i386: $(TARGET_ISO)
@@ -64,4 +65,3 @@ $(TARGET_ISO): $(ISO_DEPS) $(AROSDIR)/.backdrop
 		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
                 -l -J -r \
 		$(AROSDIR)
-
