@@ -505,6 +505,7 @@ terminate:
 	CloseLibrary((struct Library *) IntuitionBase);
 
 	FreeMem(g, sizeof(struct globaldata));
+	AfsDie ();
 }
 
 void ReturnPacket (struct DosPacket *packet, struct MsgPort *sender, globaldata *g)
@@ -693,18 +694,7 @@ static void Quit (globaldata *g)
 	LibDeletePool (g->bufferPool);
 	LibDeletePool (g->mainPool);
 
-#if MULTIUSER
-	if (muBase)
-		CloseLibrary((struct Library *) muBase);
-#endif
-	CloseLibrary(UtilityBase);
-	CloseLibrary((struct Library *) DOSBase);
-	CloseLibrary((struct Library *) IntuitionBase);
-
 	EXIT("dd_Quit");
-
-	FreeMem (g, sizeof(struct globaldata));
-	AfsDie ();
 }
 
 #undef SysBase
