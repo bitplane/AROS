@@ -144,9 +144,24 @@ VOID setcoppercolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
     if (!c2d->copper2_palette)
         return;
 
+    /*
+        The short frame list is built lazily, and its pointers are only
+        refreshed from the long frame ones when it is (re)built - so an
+        interlaced bitmap can reach us with some of them still NULL.
+    */
+    const BOOL doilace = bm->interlace && c2di->copper2_palette;
+
     UWORD i;
 
-    if (csd->aga && csd->aga_enabled) {
+    /*
+        Pick the branch that matches how this copper list was actually built,
+        not the current chipset state: aga_enabled can be switched on long
+        after the list exists (see the AGA-only mode hack in setmode()), and
+        the lo half of the palette is only emitted for lists built with AGA
+        already enabled. Trusting aga_enabled here would store through a NULL
+        copper2_palette_aga_lo, which lands in the first page of memory.
+    */
+    if (csd->aga && csd->aga_enabled && c2d->copper2_palette_aga_lo) {
         UWORD off = 1;
         D(bug("[AmigaVideo] %s: AGA\n", __func__));
         for (i = 0; i < bm->use_colors; i++) {
@@ -160,7 +175,7 @@ VOID setcoppercolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
             vallo = ((r & 0x0f) << 8) | ((g & 0x0f) << 4) | ((b & 0x0f));
             c2d->copper2_palette[i * 2 + off] = valhi;
             c2d->copper2_palette_aga_lo[i * 2 + off] = vallo;
-            if (bm->interlace) {
+            if (doilace && c2di->copper2_palette_aga_lo) {
                 c2di->copper2_palette[i * 2 + off] = valhi;
                 c2di->copper2_palette_aga_lo[i * 2 + off] = vallo;
             }
@@ -176,7 +191,7 @@ VOID setcoppercolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
             UWORD val2 = ((palette[c2 * 3 + 0] >> 4) << 8) | ((palette[c2 * 3 + 1] >> 4) << 4) | ((palette[c2 * 3 + 2] >> 4) << 0);
             UWORD val = (val1 & 0xccc) | ((val2 & 0xccc) >> 2);
             c2d->copper2_palette[i * 2 + 1] = val;
-            if (bm->interlace)
+            if (doilace)
                 c2di->copper2_palette[i * 2 + 1] = val;
         }
         
@@ -184,7 +199,7 @@ VOID setcoppercolors(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
         for (i = 0; i < bm->use_colors; i++) {
             UWORD val = ((palette[i * 3 + 0] >> 4) << 8) | ((palette[i * 3 + 1] >> 4) << 4) | ((palette[i * 3 + 2] >> 4) << 0);
             c2d->copper2_palette[i * 2 + 1] = val;
-            if (bm->interlace)
+            if (doilace)
                 c2di->copper2_palette[i * 2 + 1] = val;
         }
     }
@@ -1863,13 +1878,13 @@ VOID AmigaVideoCl__Hidd_AmigaGfx__EnableAGA(OOP_Class *cl, OOP_Object *o, void *
     // Recalculate copper lists for all visible screens now that AGA is on.
     // This should be enough to cover the sane cases when SetChipRev is called.
     // Interlace is ignored. Don't go open interlace screens before activating AGA!
-    ForeachNodeSafe(csd->compositedbms, bm, bmnext) {
-        setmode(csd, bm);
-        copperlist_end = (IPTR)populatebmcopperlist(csd, bm, &bm->copld, bm->bmcl->CopLStart, FALSE);
-        bm->bmcl->Count = (copperlist_end - (IPTR)bm->bmcl->CopLStart) >> 2;
-        setfmode(csd, bm);
-        setcoppercolors(csd, bm, bm->palette,
-                        (void *)bm == (void *)csd->compositedbms->lh_Head);
-        setcopperscroll2(csd, bm, &bm->copld, bm->bmcl->CopLStart, FALSE);
-    }
+    (void)bm; (void)bmnext; (void)copperlist_end;
+    /*
+     * Existing screens keep their pre-AGA copper lists: those chip-RAM
+     * allocations were sized without the AGA colour/fmode entries, so
+     * rebuilding them in place with AGA-sized content overruns the
+     * allocation and tramples low chip memory (including AbsExecBase).
+     * They continue to display exactly as they did before this call.
+     * Screens opened from now on are built with AGA-sized lists.
+     */
 }
