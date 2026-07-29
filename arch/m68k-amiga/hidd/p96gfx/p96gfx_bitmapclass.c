@@ -834,15 +834,60 @@ VOID P96GFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
     if (data->invram) {
         struct RenderInfo ri;
         struct Line renderLine;
+        /*
+         * P96 wants dX/dY as the end-minus-start difference, not as the end
+         * coordinate, and it wants the Bresenham terms prepared: lDelta and
+         * sDelta are the major and minor extents keeping their sign, and
+         * twoSDminusLD is the error accumulator the card starts from.
+         *
+         * Every field matters. A card is entitled to read all of them, and the
+         * Z3660 reads Length, DrawMode, PatternShift and pad among others, so
+         * the structure is cleared rather than partly filled.
+         */
+        WORD dx = msg->x2 - msg->x1;
+        WORD dy = msg->y2 - msg->y1;
+        WORD adx = dx < 0 ? -dx : dx;
+        WORD ady = dy < 0 ? -dy : dy;
+        BOOL horizontal = adx > ady;
+
         P96GFXRTG__MakeRenderInfo(csd, cid, &ri, data);
-        renderLine.FgPen = GC_FG(msg->gc);
-        renderLine.BgPen = GC_BG(msg->gc);
-        renderLine.LinePtrn = GC_LINEPAT(msg->gc);
+
+        memset(&renderLine, 0, sizeof(renderLine));
         renderLine.X = msg->x1;
         renderLine.Y = msg->y1;
-        renderLine.dX = msg->x2;
-        renderLine.dY = msg->y2;
-        v = DrawLine(cid, &ri, &renderLine, data->rgbformat);
+        /* The major extent, not the pixel count: P96 draws the endpoint itself. */
+        renderLine.Length = horizontal ? adx : ady;
+        renderLine.dX = dx;
+        renderLine.dY = dy;
+        renderLine.lDelta = horizontal ? dx : dy;
+        renderLine.sDelta = horizontal ? dy : dx;
+        renderLine.twoSDminusLD = 2 * (horizontal ? ady : adx)
+                                    - (horizontal ? adx : ady);
+        renderLine.LinePtrn = GC_LINEPAT(msg->gc);
+        /*
+         * The Amiga pattern counter selects a bit from the top down and P96
+         * counts from the bottom, so the two run in opposite directions.
+         */
+        renderLine.PatternShift = 15 - (GC_LINEPATCNT(msg->gc) & 15);
+        renderLine.FgPen = GC_FG(msg->gc);
+        renderLine.BgPen = GC_BG(msg->gc);
+        renderLine.Horizontal = horizontal;
+        /*
+         * The GC has already folded the RastPort's draw mode into a ROP and a
+         * color-expansion flag, so it is reconstructed rather than copied.
+         * INVERSVID is deliberately not set: Draw() applies it by inverting
+         * LinePtrn before we get here, and setting it again would undo that.
+         */
+        if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
+            renderLine.DrawMode = COMPLEMENT;
+        else if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Opaque)
+            renderLine.DrawMode = JAM2;
+        else
+            renderLine.DrawMode = JAM1;
+        renderLine.Xorigin = msg->x1;
+        renderLine.Yorigin = msg->y1;
+
+        v = DrawLine(cid, &ri, &renderLine, 0xff, data->rgbformat);
     }
 
     UNLOCK_HW
@@ -1281,6 +1326,8 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
     HIDDT_Pixel fg = GC_FG(msg->gc);
     struct p96gfx_staticdata *csd = CSD(cl);
+    ULONG colmask = GC_COLMASK(msg->gc);
+    UBYTE mask = (UBYTE)colmask;
     BOOL v = FALSE;
 
     D(bug("[P96Gfx:Bitmap] %s()\n", __func__));
@@ -1303,14 +1350,23 @@ VOID P96GFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 
         if (mode == vHidd_GC_DrawMode_Clear || mode == vHidd_GC_DrawMode_Set) {
             ULONG pen = mode == vHidd_GC_DrawMode_Clear ? 0x00000000 : 0xffffffff;
-            v = FillRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pen, 0xff, data->rgbformat);
+            v = FillRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, pen, mask, data->rgbformat);
         } else if (mode == vHidd_GC_DrawMode_Copy) {
-            v = FillRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, fg, 0xff, data->rgbformat);
+            v = FillRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, fg, mask, data->rgbformat);
         } else if (mode == vHidd_GC_DrawMode_Invert) {
-            v = InvertRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, 0xff, data->rgbformat);
+            v = InvertRect(cid, &ri, msg->minX, msg->minY, msg->maxX - msg->minX + 1, msg->maxY - msg->minY + 1, mask, data->rgbformat);
         }
 
         UNLOCK_HW
+    }
+
+    /* The memory fallbacks below write whole pixels, so a partial mask has to
+       go to the superclass instead. */
+    if (!v && colmask != ~0)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        UNLOCK_BITMAP(data)
+        return;
     }
 
     if (!v) switch(mode)
