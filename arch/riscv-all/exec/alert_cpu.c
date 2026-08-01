@@ -39,8 +39,12 @@ char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBa
 
 APTR UnwindFrame(APTR fp, APTR *caller)
 {
+    /*
+     * The RISC-V frame pointer (s0) points to the CFA; the epilogue
+     * restores ra from fp-XLEN and the caller's fp from fp-2*XLEN.
+     */
     APTR *frame = fp;
 
-    *caller = frame[0];
-    return frame[-1];
+    *caller = frame[-1];
+    return frame[-2];
 }
