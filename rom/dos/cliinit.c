@@ -686,16 +686,17 @@ static LONG internalBootCliHandler(void)
 
         /* dn_Startup may hold a small integer instead of a BPTR for some
          * handlers; require a plausible pointer before dereferencing.
-         * The device name is a BSTR and need not be NUL-terminated, so
-         * compare by length.
+         * Identify the filesystem rather than the underlying device: an
+         * optical drive may be provided by ata.device, scsi.device, or a
+         * controller-specific driver.
          */
-        if ((IPTR)fssm > 0x1000 && fssm->fssm_Device != BNULL)
+        if ((IPTR)fssm > 0x1000 && fssm->fssm_Environ != BNULL)
         {
-            CONST_STRPTR dev = AROS_BSTR_ADDR(fssm->fssm_Device);
-            int devlen = AROS_BSTR_strlen(fssm->fssm_Device);
-            D(bug("CliInit: boot device '%s' len %d\n", dev, devlen));
-            if (devlen >= 9 && memcmp(dev, "cd.device", 9) == 0 &&
-                (devlen == 9 || dev[9] == '\0'))
+            struct DosEnvec *de = BADDR(fssm->fssm_Environ);
+
+            PRINT_DOSTYPE(de->de_DosType);
+            if (de->de_DosType == AROS_MAKE_ID('C', 'D', 'V', 'D') ||
+                de->de_DosType == AROS_MAKE_ID('C', 'D', 'F', 'S'))
             {
                 D(bug("CliInit: appliance boot (requesters off)\n"));
                 IntExpBase(ExpansionBase)->BootFlags |= BF_NO_BOOT_REQUESTERS;
