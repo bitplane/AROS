@@ -1633,6 +1633,9 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 {
 	struct Task *caller;
 	BOOL showrequesters = TRUE;
+	SIPTR result;
+
+	bug("[pfs3] ACTION_FORMAT received\n");
 
 	/* argumenten stemmen NIET met de dosmanual overeen */
 	// ARG1 = BSTR Name of device (with trailing ':')
@@ -1668,8 +1671,11 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 	}
 
 	/* format disk */
-	return FDSFormat((DSTR)BADDR(pkt->dp_Arg1), pkt->dp_Arg2,
+	result = FDSFormat((DSTR)BADDR(pkt->dp_Arg1), pkt->dp_Arg2,
 		&pkt->dp_Res2, showrequesters, g);
+	bug("[pfs3] ACTION_FORMAT result %ld, error %ld\n",
+		(LONG)result, (LONG)pkt->dp_Res2);
+	return result;
 }
 
 

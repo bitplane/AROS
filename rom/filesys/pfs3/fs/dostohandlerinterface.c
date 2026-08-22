@@ -35,6 +35,9 @@
 #include <exec/interrupts.h>
 #include <dos/filehandler.h>
 #include <dos/notify.h>
+#ifdef __AROS__
+#include <aros/debug.h>
+#endif
 #if MULTIUSER
 #include <proto/multiuser.h>
 #endif

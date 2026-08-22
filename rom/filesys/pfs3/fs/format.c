@@ -117,6 +117,7 @@
 #include <exec/io.h>
 #include <dos/filehandler.h>
 #include <intuition/intuition.h>
+#include <aros/debug.h>
 #include <proto/intuition.h>
 #include "debug.h"
 #include <math.h>
@@ -173,6 +174,7 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, BOOL showrequesters,
 
 	/* remove error-induced soft protect */
 	if (g->softprotect < 0) {
+		bug("[pfs3] format failed: soft protected\n");
 		*error = ERROR_DISK_WRITE_PROTECTED;
 		return DOSFALSE;
 	}
@@ -182,22 +184,27 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, BOOL showrequesters,
 
 	/* update dos envec and geom */
 	GetDriveGeometry (g);
+	bug("[pfs3] geometry: sectors %lu, sector size %lu\n",
+		g->geom->dg_TotalSectors, g->geom->dg_SectorSize);
 	if (showrequesters)
 		ShowVersion (g);
 
 	/* issue 00118: disk cannot exceed MAX_DISK_SIZE */
 	if (g->geom->dg_TotalSectors > MAXDISKSIZE) {
+		bug("[pfs3] format failed: disk too large\n");
 		*error = ERROR_OBJECT_TOO_LARGE;
 		return DOSFALSE;
 	}
 
 	err = MakeBootBlock (g);
 	if (err != 0) {
+		bug("[pfs3] format failed: boot block error %lu\n", err);
 		*error = err;
  		return DOSFALSE;
 	}
 
 	if (!(rootblock = MakeRootBlock (diskname, showrequesters, g))) {
+		bug("[pfs3] format failed: root block allocation\n");
 		*error = ERROR_NO_FREE_STORE;
 		return DOSFALSE;
 	}
@@ -207,6 +214,7 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, BOOL showrequesters,
 
 	/* add extension */
 	if (!(rext = MakeFormatRBlkExtension (rootblock, g))) {
+		bug("[pfs3] format failed: root block extension allocation\n");
 		*error = ERROR_NO_FREE_STORE;
 		return DOSFALSE;			// rootblock extension could not be created
 	}
@@ -233,6 +241,7 @@ BOOL FDSFormat (DSTR diskname, LONG disktype, SIPTR *error, BOOL showrequesters,
 	UpdateDisk (g);
 	FreeVolumeResources (volume, g);
 	g->currentvolume = NULL;
+	bug("[pfs3] format complete\n");
 
 	return DOSTRUE;
 }
