@@ -38,6 +38,7 @@ PFS3_CFLAGS := \
 	-DTRACKDISK=1 \
 	-DUNSAFEQUIT=1 \
 	-DLARGE_FILE_SIZE=1 \
+	-DPFS3_NO_FORMAT_REQUESTERS=1 \
 	-DEXTENDED_PACKETS_MORPHOS=1 \
 	-DEXTENDED_PACKETS_OS4=1 \
 	-DLIMIT_MAXTRANSFER=0x1fe00
@@ -71,7 +72,7 @@ USER_CPPFLAGS := \
     -DAROS_KERNEL $(PFS3_CFLAGS) -DMIN_LIB_VERSION=36 \
 	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
 
-USER_LDFLAGS += --static -nosysbase -Wl,--defsym -Wl,SysBase=0x4
+USER_LDFLAGS += --static
 
 %build_module mmake=kernel-fs-pfs3 \
     modname=pfs3 modtype=handler \
