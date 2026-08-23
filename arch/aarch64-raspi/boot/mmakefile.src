@@ -26,6 +26,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 
 #MM kernel-package-raspi-aarch64-quick: \
 #MM linklibs-stdc-static-quick \
+#MM compiler-stdc-quick \
 #MM kernel-dos-quick \
 #MM kernel-dos64-quick \
 #MM kernel-entropy-quick \
@@ -88,6 +89,7 @@ ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
 
 #MM kernel-package-raspi-aarch64: \
 #MM linklibs-stdc-static \
+#MM compiler-stdc \
 #MM kernel-dos \
 #MM kernel-dos64 \
 #MM kernel-entropy \
@@ -187,7 +189,7 @@ RASPIWIFIFW_FILES  := brcm/brcmfmac43455-sdio.bin brcm/brcmfmac43455-sdio.txt \
                      brcm/brcmfmac43430-sdio.bin brcm/brcmfmac43430-sdio.txt \
                      LICENCE.broadcom_bcm43xx
 
-PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos dos64 poseidon cgxbootpic gadtools lowlevel fd
+PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos dos64 poseidon cgxbootpic gadtools lowlevel fd stdc
 PKG_LIBS_ARCH := expansion
 PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands entropy mbox dma sdio bwfm
 PKG_RSRC_ARCH := processor
