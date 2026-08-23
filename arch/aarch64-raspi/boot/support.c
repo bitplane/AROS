@@ -39,11 +39,19 @@ void aarch64_icache_invalidate(uintptr_t addr, uintptr_t length)
  * The bootstrap runs with the MMU off, where every access is treated as
  * Device memory and must be aligned. The C library memset/memcpy use NEON
  * STP Q stores and unaligned accesses that fault in that state, so the
- * bootstrap carries its own alignment-safe versions. optnone keeps the
- * compiler from recognising the loops and calling the routines recursively
- * or re-vectorising them.
+ * bootstrap carries its own alignment-safe versions. Optimization is disabled
+ * so the compiler cannot recognise the loops as calls to the routines or
+ * re-vectorise them.
  */
-__attribute__((optnone))
+#if defined(__clang__)
+#define NO_OPTIMIZE __attribute__((optnone))
+#elif defined(__GNUC__)
+#define NO_OPTIMIZE __attribute__((optimize("O0")))
+#else
+#define NO_OPTIMIZE
+#endif
+
+NO_OPTIMIZE
 void *memset(void *dst, int c, size_t n)
 {
     unsigned char *d = dst;
@@ -70,7 +78,7 @@ void *memset(void *dst, int c, size_t n)
     return dst;
 }
 
-__attribute__((optnone))
+NO_OPTIMIZE
 void *memcpy(void *dst, const void *src, size_t n)
 {
     unsigned char *d = dst;
@@ -97,7 +105,7 @@ void *memcpy(void *dst, const void *src, size_t n)
     return dst;
 }
 
-__attribute__((optnone))
+NO_OPTIMIZE
 void *memmove(void *dst, const void *src, size_t n)
 {
     unsigned char *d = dst;
