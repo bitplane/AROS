@@ -527,6 +527,9 @@ BOOL ScanLockList (listentry_t *list, ULONG anodenr)
 
 ULONG muFS_CheckReadAccess (ULONG protection, ULONG flags, globaldata *g)
 {
+	if (!g->muFS_ready)
+		return 0;
+
 	if (flags & (muRelF_UID_MATCH | muRelF_NO_OWNER))
 	{
 		if (protection & FIBF_READ)
@@ -545,6 +548,9 @@ ULONG muFS_CheckReadAccess (ULONG protection, ULONG flags, globaldata *g)
 
 ULONG muFS_CheckWriteAccess (ULONG protection, ULONG flags, globaldata *g)
 {
+	if (!g->muFS_ready)
+		return 0;
+
 	if (flags & (muRelF_UID_MATCH | muRelF_NO_OWNER))
 	{
 		if (protection & FIBF_WRITE)
@@ -563,6 +569,9 @@ ULONG muFS_CheckWriteAccess (ULONG protection, ULONG flags, globaldata *g)
 
 ULONG muFS_CheckDeleteAccess (ULONG protection, ULONG flags, globaldata *g)
 {
+	if (!g->muFS_ready)
+		return 0;
+
 	if (flags & (muRelF_UID_MATCH | muRelF_NO_OWNER))
 	{
 		if (protection & FIBF_DELETE)

@@ -911,7 +911,7 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	UBYTE newnamelen;
 
 #if MULTIUSER
-	if (g->user->uid != muROOT_UID)
+	if (g->muFS_ready && g->user->uid != muROOT_UID)
 	{
 		pkt->dp_Res2 = ERROR_DISK_WRITE_PROTECTED;
 		return DOSFALSE;
@@ -1656,7 +1656,7 @@ static SIPTR dd_Format(struct DosPacket *pkt, globaldata * g)
 	// RES2 = failurecode (if res1 = DOSFALSE)
 
 #if MULTIUSER
-	if (g->user->uid != muROOT_UID)
+	if (g->muFS_ready && g->user->uid != muROOT_UID)
 	{
 		pkt->dp_Res2 = ERROR_DISK_WRITE_PROTECTED;
 		return DOSFALSE;
@@ -2077,7 +2077,7 @@ static SIPTR dd_SetDeldir(struct DosPacket *pkt, globaldata *g)
 		return DOSFALSE;
 
 #if MULTIUSER
-	if (g->user->uid != muROOT_UID)
+	if (g->muFS_ready && g->user->uid != muROOT_UID)
 	{
 		*error = ERROR_DISK_WRITE_PROTECTED;
 		return DOSFALSE;
