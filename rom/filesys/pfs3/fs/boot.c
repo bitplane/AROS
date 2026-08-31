@@ -545,7 +545,7 @@ static void Quit (globaldata *g)
 	UpdateDisk (g);
 
 #if MULTIUSER
-	if (g->user->uid != muROOT_UID)
+	if (g->muFS_ready && g->user->uid != muROOT_UID)
 		return;
 #endif
 
