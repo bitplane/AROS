@@ -16,6 +16,7 @@
 #include "bcm2708_boot.h"
 #include "vc_mb.h"
 #include "vc_fb.h"
+#include "mmu.h"
 #include "boot.h"
 
 #undef ARM_PERIIOBASE
@@ -191,7 +192,8 @@ int vcfb_init(void)
      * and the RAM ranges (Pi 5: carveout at 0x3f800000) - map it
      * explicitly instead of relying on query_vmem()'s coverage.
      * Normal-NC: framebuffer wants write-combining, not Device. */
-    mmu_map_section(vcfb_base, vcfb_base, vcfb_pitch * vcfb_height, 1, 0, 3, 0);
+    mmu_map_section((uintptr_t)vcfb_base, (uintptr_t)vcfb_base,
+                    vcfb_pitch * vcfb_height, 1, 0, 3, 0);
 
     fb_Init(fb_width, fb_height, fb_depth, fb_pitch);
 
