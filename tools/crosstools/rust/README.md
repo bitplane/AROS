@@ -20,7 +20,7 @@ only ever reaches the target C driver through the
   every crate).
 * `x.py build --stage 1 compiler library` then `x.py install --stage 1`, with
   a generated `bootstrap.toml`. LLVM is built from the bundled sources with
-  only the X86 and the target CPU backends.
+  the X86 and AArch64 build-host backends plus the target CPU backend.
 * `tools-crosstools-rust-bindgen` and `tools-crosstools-rust-cbindgen` install
   bindgen-cli and cbindgen from crates.io with the freshly installed cargo
   (these need network access, and bindgen needs a libclang at run time: the
